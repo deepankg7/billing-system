@@ -5,10 +5,11 @@ const cors = require('cors');
 
 const app = express();
 app.use(bodyParser.json());
-app.use(cors());
-
+app.use(cors({
+    origin: "*"
+}));    
 // Create SQLite database
-const db = new sqlite3.Database('./billing.db');
+const db = new sqlite3.Database(process.env.DB_PATH || './billing.db');
 
 // Create Tables
 db.serialize(() => {
@@ -197,6 +198,8 @@ app.delete("/customers/:id", (req, res) => {
 app.use(express.json());
 app.use(express.static("public"));
 
-app.listen(3000, () => {
-    console.log("Server running on http://localhost:3000");
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
 });
