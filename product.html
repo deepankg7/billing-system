@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Products - Admin</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        .sidebar { height: 100vh; background: #343a40; }
+        .sidebar a { color: white; display: block; padding: 15px; text-decoration: none; }
+        .sidebar a:hover { background: #495057; }
+        .content { padding: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="container-fluid">
+<div class="row">
+
+<!-- Sidebar -->
+<div class="col-md-2 sidebar">
+    <h4 class="text-white text-center py-3">Billing System</h4>
+    <a href="index.html">Dashboard</a>
+    <a href="products.html">Products</a>
+    <a href="customers.html">Customers</a>
+    <a href="billing.html">Billing</a>
+</div>
+
+<!-- Main Content -->
+<div class="col-md-10 content">
+
+<nav class="navbar navbar-light bg-light shadow-sm mb-4">
+    <span class="navbar-brand mb-0 h4">Product Management</span>
+</nav>
+
+<div class="card shadow mb-4">
+<div class="card-body">
+
+<input type="hidden" id="pid">
+
+<div class="row">
+    <div class="col-md-3">
+        <input class="form-control" id="pname" placeholder="Product Name">
+    </div>
+    <div class="col-md-2">
+        <input class="form-control" id="pprice" placeholder="Price">
+    </div>
+    <div class="col-md-2">
+        <input class="form-control" id="pqty" placeholder="Quantity">
+    </div>
+    <div class="col-md-3">
+        <input type="date" class="form-control" id="pexpiry">
+    </div>
+    <div class="col-md-2">
+        <button class="btn btn-primary w-100" onclick="saveProduct()">Save</button>
+    </div>
+</div>
+
+</div>
+</div>
+
+<div class="card shadow">
+<div class="card-body">
+
+<table class="table table-bordered table-striped">
+<thead class="table-dark">
+<tr>
+    <th>ID</th>
+    <th>Name</th>
+    <th>Price</th>
+    <th>Qty</th>
+    <th>Expiry</th>
+    <th>Action</th>
+</tr>
+</thead>
+<tbody id="productTable"></tbody>
+</table>
+
+</div>
+</div>
+
+</div>
+</div>
+</div>
+
+<script>
+function loadProducts() {
+    fetch('http://localhost:3000/products')
+    .then(res => res.json())
+    .then(data => {
+        let table = document.getElementById("productTable");
+        table.innerHTML = "";
+
+        data.forEach(p => {
+            table.innerHTML += `
+            <tr>
+                <td>${p.id}</td>
+                <td>${p.name}</td>
+                <td>${p.price}</td>
+                <td>${p.quantity}</td>
+                <td>${p.expiry_date || '-'}</td>
+                <td>
+                    <button class="btn btn-warning btn-sm"
+                    onclick="editProduct(${p.id}, '${p.name}', ${p.price}, ${p.quantity}, '${p.expiry_date || ''}')">
+                    Edit
+                    </button>
+                </td>
+            </tr>`;
+        });
+    });
+}
+
+function saveProduct() {
+    const id = pid.value;
+
+    const data = {
+        name: pname.value,
+        price: pprice.value,
+        quantity: pqty.value,
+        expiry_date: pexpiry.value
+    };
+
+    if (id) {
+        fetch(`http://localhost:3000/updateProduct/${id}`, {
+            method: 'PUT',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify(data)
+        }).then(() => {
+            clearForm();
+            loadProducts();
+        });
+    } else {
+        fetch('http://localhost:3000/addProduct', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify(data)
+        }).then(() => {
+            clearForm();
+            loadProducts();
+        });
+    }
+}
+
+function editProduct(id,name,price,qty,expiry){
+    pid.value=id;
+    pname.value=name;
+    pprice.value=price;
+    pqty.value=qty;
+    pexpiry.value=expiry;
+}
+
+function clearForm(){
+    pid.value="";
+    pname.value="";
+    pprice.value="";
+    pqty.value="";
+    pexpiry.value="";
+}
+
+window.onload = loadProducts;
+</script>
+
+</body>
+</html>

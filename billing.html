@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Billing - Admin</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+body { overflow-x: hidden; }
+.sidebar { height: 100vh; background: #343a40; }
+.sidebar a {
+    color: white;
+    display: block;
+    padding: 15px;
+    text-decoration: none;
+}
+.sidebar a:hover { background: #495057; }
+.content { padding: 20px; }
+</style>
+</head>
+<body>
+
+<div class="container-fluid">
+<div class="row">
+
+<!-- Sidebar -->
+<div class="col-md-2 sidebar">
+    <h4 class="text-white text-center py-3">Billing System</h4>
+    <a href="index.html">Dashboard</a>
+    <a href="product.html">Products</a>
+    <a href="customers.html">Customers</a>
+    <a href="billing.html">Billing</a>
+</div>
+
+<!-- Main Content -->
+<div class="col-md-10 content">
+
+<nav class="navbar navbar-light bg-light shadow-sm mb-4">
+    <span class="navbar-brand mb-0 h4">Billing</span>
+</nav>
+
+<div class="container">
+
+<!-- Customer Section -->
+<div class="card shadow p-3 mb-3">
+<div class="row">
+<div class="col-md-4">
+<input class="form-control" id="customerName" placeholder="Customer Name">
+</div>
+<div class="col-md-4">
+<input class="form-control" id="customerMobile" placeholder="Mobile Number">
+</div>
+</div>
+</div>
+
+<!-- Product Add Section -->
+<div class="card shadow p-3 mb-3">
+<div class="row">
+
+<div class="col-md-4">
+<select id="productSelect" class="form-control"></select>
+</div>
+
+<div class="col-md-2">
+<input class="form-control" id="billQty" placeholder="Qty">
+</div>
+
+<div class="col-md-2">
+<button class="btn btn-primary w-100" onclick="addItem()">Add</button>
+</div>
+
+</div>
+</div>
+
+<!-- Bill Items Table -->
+<div class="card shadow">
+<div class="card-body">
+
+<table class="table table-bordered table-striped">
+<thead class="table-dark">
+<tr>
+<th>Product</th>
+<th>Price</th>
+<th>Qty</th>
+<th>Total</th>
+</tr>
+</thead>
+<tbody id="billTable"></tbody>
+</table>
+
+<h4 class="text-end">Total: ₹ <span id="grandTotal">0</span></h4>
+
+<div class="text-end">
+<button class="btn btn-success" onclick="createBill()">Generate Bill</button>
+</div>
+
+</div>
+</div>
+
+</div>
+</div>
+</div>
+</div>
+
+<script>
+let billItems = [];
+let products = [];
+
+function loadProducts() {
+    fetch('http://localhost:3000/products')
+    .then(res => res.json())
+    .then(data => {
+        products = data;
+        let select = document.getElementById("productSelect");
+        select.innerHTML = "";
+
+        data.forEach(p => {
+            select.innerHTML += `<option value="${p.id}">
+                ${p.name} (Stock: ${p.quantity})
+            </option>`;
+        });
+    });
+}
+
+function addItem() {
+    const productId = productSelect.value;
+    const qty = parseInt(billQty.value);
+
+    if (!qty || qty <= 0) {
+        alert("Enter valid quantity");
+        return;
+    }
+
+    const product = products.find(p => p.id == productId);
+
+    if (!product) {
+        alert("Invalid product");
+        return;
+    }
+
+    if (qty > product.quantity) {
+        alert("Not enough stock!");
+        return;
+    }
+
+    const total = product.price * qty;
+
+    billItems.push({
+        product_id: productId,
+        quantity: qty
+    });
+
+    billTable.innerHTML += `
+    <tr>
+        <td>${product.name}</td>
+        <td>${product.price}</td>
+        <td>${qty}</td>
+        <td>${total}</td>
+    </tr>`;
+
+    updateTotal();
+    billQty.value = "";
+}
+
+function updateTotal() {
+    let total = 0;
+    billItems.forEach(item => {
+        const product = products.find(p => p.id == item.product_id);
+        total += product.price * item.quantity;
+    });
+    grandTotal.innerText = total;
+}
+
+function createBill() {
+
+    if (billItems.length === 0) {
+        alert("Add at least one product");
+        return;
+    }
+
+    fetch('http://localhost:3000/createBill', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            customer_name: customerName.value,
+            phone: customerMobile.value,
+            items: billItems
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message);
+        location.reload();
+    });
+}
+
+window.onload = loadProducts;
+</script>
+
+</body>
+</html>
